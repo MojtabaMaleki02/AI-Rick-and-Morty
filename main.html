@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rick Chatbot</title>
+    <style>
+        #chat-container {
+            position: relative;
+        }
+
+        #rick-img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .rick-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Style for the chat popup */
+        .chat-popup {
+            display: none;
+            position: fixed;
+            top: 50px;
+            left: 50px;
+            background-color: #f1f1f1;
+            border: 1px solid #d3d3d3;
+            padding: 10px;
+            max-width: 300px;
+        }
+
+        #user-profile-image {
+        max-width: 100px;
+        border-radius: 50%;
+        margin: 0 auto;
+        }
+
+        #user-username,
+        #user-message {
+        margin-top: 10px;
+        
+        }
+
+        #user-message {
+            font-size: 20px;
+        }
+
+        #user-username{
+            font-size: 30px;
+            font-weight: bolder;
+            color: blue;
+        }
+
+        .close {
+        cursor: pointer;
+        float: right;
+        font-size: 20px;
+        font-weight: bold;
+        }
+
+        .close:hover {
+        color: #000;
+        }
+        
+
+        /* Style for the subtitle */
+        #subtitle {
+            position: absolute;
+            bottom: 160px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 26px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            max-width: 80%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <video id="rick-img" src="images/Rick and Morty bg.mp4" alt="Rick" autoplay loop></video>
+        <div id="chat-messages"></div>
+        <p id="subtitle"></p>
+    </div>
+
+    <div class="chat-popup" id="user-popup">
+        <span class="close" onclick="closePopup('user-popup')">&times;</span>
+        <img id="user-profile-image" src="" alt="User Profile">
+        <span id="user-username"></span>
+        <div id="user-message"></div>
+    </div>
+
+    <script>
+        const imagesDirectory = "images/Rick - Edited/"; // Directory path for Rick's images
+
+        const images = [
+            "Rick Talks 1.png",
+            "Rick Talks 2.png",
+            "Rick Talks 3.png",
+            "Rick Talks 4.png",
+            "Rick Talks 5.png",
+            "Rick Talks 6.png",
+            "Rick Talks 7.png",
+            "Rick Talks 8.png",
+            "Rick Talks 9.png",
+            "Rick Talks 10.png",
+            "Rick Talks 11.png",
+            "Rick Talks 12.png",
+            "Rick Talks 13.png",
+            // Add all your image file names here
+        ];
+
+        let currentImageIndex = 0;
+        let lastMessage = "";
+
+        function changeRickImageRandomly() {
+            const rickContainer = document.getElementById("chat-container");
+            const randomIndex = Math.floor(Math.random() * images.length);
+            const rickOverlay = document.createElement("img");
+            rickOverlay.src = imagesDirectory + images[randomIndex];
+            rickOverlay.classList.add("rick-overlay");
+            rickContainer.appendChild(rickOverlay);
+        }
+
+        function changeRickImage() {
+            const rickContainer = document.getElementById("chat-container");
+            const rickOverlay = document.querySelector(".rick-overlay");
+            if (rickOverlay) {
+                rickContainer.removeChild(rickOverlay);
+            }
+        }
+
+        // Function to close the popup
+        function closePopup(popupId) {
+            const popup = document.getElementById(popupId);
+            popup.style.display = "none";
+        }
+
+        // Function to show the popup with user details
+        function showUserPopup(username, profileImageUrl, message) {
+            const userPopup = document.getElementById("user-popup");
+            const userProfileImage = document.getElementById("user-profile-image");
+            const userUsername = document.getElementById("user-username");
+            const userMessage = document.getElementById("user-message");
+
+            userProfileImage.src = profileImageUrl;
+            userProfileImage.alt = `Profile Image of ${username}`; // Set alt text for accessibility
+            userUsername.textContent = username;
+            userMessage.textContent = message;
+
+            userPopup.style.display = "block";
+
+            // Automatically close the popup after 5 seconds
+            setTimeout(() => {
+                closePopup("user-popup");
+            }, 5000);
+        }
+
+        async function addMessageToChat(message, isUser, username, profileImageUrl) {
+            const chatMessages = document.getElementById("chat-messages");
+            const messageDiv = document.createElement("div");
+            messageDiv.className = isUser ? "user-message" : "rick-message";
+            messageDiv.textContent = message;
+            chatMessages.appendChild(messageDiv);
+
+            if (isUser) {
+                // Show the user popup with username and profile image
+                showUserPopup(username, profileImageUrl, message);
+            }
+
+            if (!isUser) {
+                const synth = window.speechSynthesis;
+                const utterance = new SpeechSynthesisUtterance(message);
+
+                // Split the response into words
+                const words = message.split(' ');
+
+                // Change the image for each word in the response
+                let currentIndex = 0;
+
+                utterance.addEventListener('start', () => {
+                    const intervalId = setInterval(() => {
+                        if (currentIndex < words.length * 1.7) {
+                            changeRickImageRandomly(); // Change image randomly
+                            currentIndex++;
+                            console.log("sex")
+                        } else {
+                            console.log("in here")
+                            changeRickImage();
+                        }
+                    }, 200); // Change image every 200 milliseconds
+                });
+
+                // Read Rick's response aloud
+                synth.speak(utterance);
+
+                // Display GPT response as subtitle on the video
+                const subtitleElement = document.getElementById('subtitle');
+                subtitleElement.textContent = message;
+            }
+        }
+
+        async function sendChatToGPT(message, username) {
+            const API_KEY = 'GPT-API-KEY'; // Replace with your OpenAI API key
+
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`,
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4',
+                        messages: [{ role: 'user', content: `Act like you are Rick from Rick and Morty and now Stuck on a YouTube Live. This message is from a live viewer. His user name is ${username}. Answer to them like Rick Would do: ${message}` }],
+                        temperature: 1.0,
+                        top_p: 0.7,
+                        n: 1,
+                        stream: false,
+                        presence_penalty: 0,
+                        frequency_penalty: 0,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const apiResponse = data.choices[0].message.content;
+
+                    // Add the API response to the chat
+                    addMessageToChat(apiResponse, false);
+                } else {
+                    console.error('Error:', response);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function fetchAndDisplayLastChat() {
+            const apiKey = 'YouTube-API-Key'; // Replace with your YouTube Data API key
+            const liveChatId = 'Live-Chat-ID'; // Replace with the actual live chat ID
+
+            const url = `https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${liveChatId}&part=snippet,authorDetails&maxResults=2000&key=${apiKey}`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+
+                    const chatMessages = data.items;
+                    if (chatMessages.length > 0) {
+                        // Sort messages by publishedAt in descending order
+                        chatMessages.sort((a, b) => new Date(b.snippet.publishedAt) - new Date(a.snippet.publishedAt));
+
+                        const currentMessage = chatMessages[0].snippet.textMessageDetails.messageText;
+                        const displayName = chatMessages[0].authorDetails.displayName;
+                        const profileImageUrl = chatMessages[0].authorDetails.profileImageUrl;
+                        if (currentMessage !== lastMessage) {
+                            lastMessage = currentMessage;
+                            const username = displayName;
+                            // Add user message to the chat
+                            addMessageToChat(currentMessage, true, username, profileImageUrl);
+
+                            // Send user message to GPT and get response
+                            sendChatToGPT(currentMessage, username);
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Fetch and display last chat every 30 seconds (changed from 120 seconds)
+        setInterval(fetchAndDisplayLastChat, 30000);
+    </script>
+</body>
+</html>
